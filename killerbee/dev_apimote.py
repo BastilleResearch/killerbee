@@ -225,6 +225,23 @@ class APIMOTE:
         self.handle.RF_carrier() #constant carrier wave jamming
         #self.handle.RF_reflexjam() #reflexive jamming (advanced)
 
+    def reflex_indirect(self, packet, channel=None):
+        self.capabilities.require(KBCapabilities.PHYJAM_REFLEX)
+
+        self.handle.RF_promiscuity(1)
+        self.handle.RF_autocrc(0)
+        if channel != None:
+            self.set_channel(channel)
+        self.handle.CC_RFST_RX()
+
+        fcs = [ord(x) for x in makeFCS(packet)]
+        gfready = [ord(x) for x in packet]
+        gfready.append(fcs[0])
+        gfready.append(fcs[1])
+        gfready.insert(0, len(gfready))
+
+        self.handle.RF_reflexjam_indirect(gfready)
+
     def set_sync(self, sync=0xA70F):
         '''Set the register controlling the 802.15.4 PHY sync byte.'''
         self.capabilities.require(KBCapabilities.SET_SYNC)

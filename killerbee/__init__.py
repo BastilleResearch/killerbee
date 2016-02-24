@@ -301,3 +301,5 @@ class KillerBee:
         '''
         return self.driver.jammer_on(channel=channel)
 
+    def reflex_indirect(self, packet, channel=None):
+        return self.driver.reflex_indirect(packet, channel)

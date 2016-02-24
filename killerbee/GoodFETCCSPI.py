@@ -76,12 +76,10 @@ class GoodFETCCSPI(GoodFET):
         bytes=2;
         
         self.writecmd(self.CCSPIAPP,0x02,len(data),data);
-        try:
-            toret=( ord(self.data[2]) + (ord(self.data[1])<<8) );
-        except Exception as e:
-            print "issue in peeking for a register"
-            print e
-            toret=( (ord(self.data[1])<<8) );
+        toret=(
+            ord(self.data[2])+
+            (ord(self.data[1])<<8)
+            );
         return toret;
     def poke(self,reg,val,bytes=2):
         """Write a CCSPI Register."""
@@ -254,6 +252,13 @@ class GoodFETCCSPI(GoodFET):
         data = "";
         self.writecmd(self.CCSPIAPP,0xA1,len(data),data);
         print "Got:", data, "and", self.data
+        return;
+
+    def RF_reflexjam_indirect(self,packet):
+        """Pre-loads an indirect data request response in the device.
+           Places device into reflexive jamming mode; serves forged
+           frame pending ACKs and the preloaded indirect response."""
+        self.writecmd(self.CCSPIAPP,0xA2,len(packet),packet);
         return;
 
     def RF_modulated_spectrum(self):
