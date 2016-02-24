@@ -310,4 +310,4 @@ class KillerBee:
         @type channel: Integer
         @type channel: Sets the channel, optional.
         '''
-        return self.driver.reflex_indirect(packet, channel)
+        return self.driver.indirect_inject(packet, channel)
