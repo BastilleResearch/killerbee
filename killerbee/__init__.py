@@ -301,7 +301,7 @@ class KillerBee:
         '''
         return self.driver.jammer_on(channel=channel)
 
-    def indirect_inject(self, packet, channel=None):
+    def indirect_inject(self, packet, channel=None, oneshot=False):
         '''
         Preloads ApiMote with payload provided as packet argument.
         Reflexively jams all traffic, serves forged frame pending ACKs and the preloaded command.
@@ -310,4 +310,4 @@ class KillerBee:
         @type channel: Integer
         @type channel: Sets the channel, optional.
         '''
-        return self.driver.indirect_inject(packet, channel)
+        return self.driver.indirect_inject(packet, channel, oneshot)

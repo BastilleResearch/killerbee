@@ -225,7 +225,7 @@ class APIMOTE:
         self.handle.RF_carrier() #constant carrier wave jamming
         #self.handle.RF_reflexjam() #reflexive jamming (advanced)
 
-    def indirect_inject(self, packet, channel=None):
+    def indirect_inject(self, packet, channel=None, oneshot=False):
         self.capabilities.require(KBCapabilities.PHYJAM_REFLEX)
 
         self.handle.RF_promiscuity(1)
@@ -239,6 +239,7 @@ class APIMOTE:
         gfready.append(fcs[0])
         gfready.append(fcs[1])
         gfready.insert(0, len(gfready))
+        gfready.insert(0, 0x00 if oneshot is False else 0x01)
 
         self.handle.RF_reflexjam_indirect(gfready)
 
