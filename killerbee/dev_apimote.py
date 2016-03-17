@@ -226,14 +226,26 @@ class APIMOTE:
         #self.handle.RF_reflexjam() #reflexive jamming (advanced)
 
     def indirect_inject(self, packet, channel=None, oneshot=False):
+        '''
+        Preloads ApiMote with payload provided as packet argument.
+        Reflexively jams all traffic while serving forged frame pending ACKs and the preloaded cmd.
+        @type packet: String
+        @param packet: Packet contents to pre-load, excluding length and FCS (generated below).
+        @type channel: Integer
+        @param channel: Sets the channel.  Optional.
+        @type oneshot: Bool
+        @param oneshot: Inject sequence indefinitely if true, exactly once if false.  Optional.
+        '''
+        # Hardware must be able to detect the beginning of a packet; through SFD pin for ApiMote
         self.capabilities.require(KBCapabilities.PHYJAM_REFLEX)
 
-        self.handle.RF_promiscuity(1)
+        self.handle.RF_promiscuity(1)    #Configure the radio
         self.handle.RF_autocrc(0)
         if channel != None:
             self.set_channel(channel)
-        self.handle.CC_RFST_RX()
+        self.handle.CC_RFST_RX()         #Put the radio in RX mode to begin
 
+        #Prepare command by calculating/appending the FCS and prepending the oneshot value and length.
         fcs = [ord(x) for x in makeFCS(packet)]
         gfready = [ord(x) for x in packet]
         gfready.append(fcs[0])
@@ -241,6 +253,7 @@ class APIMOTE:
         gfready.insert(0, len(gfready))
         gfready.insert(0, 0x00 if oneshot is False else 0x01)
 
+        #Send the command to the ApiMote
         self.handle.RF_reflexjam_indirect(gfready)
 
     def set_sync(self, sync=0xA70F):
