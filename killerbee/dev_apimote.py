@@ -42,6 +42,7 @@ class APIMOTE:
         self._channel = None
         self.handle = None
         self.dev = dev
+        self._backlog = []
 
         self.__revision_num = revision
         # Set enviroment variables for GoodFET code to use
@@ -183,22 +184,41 @@ class APIMOTE:
         packet = None;
         start = datetime.utcnow()
 
+        if len(self._backlog) > 0:
+            return self._backlog.pop(0)
+
         while (packet is None and (start + timedelta(microseconds=timeout) > datetime.utcnow())):
             packet = self.handle.RF_rxpacket()
             rssi = self.handle.RF_getrssi() #TODO calibrate
 
-        if packet is None:
+        if packet is None or len(packet) == 0:
             return None
 
-        frame = packet[1:]
-        if frame[-2:] == makeFCS(frame[:-2]): validcrc = True
-        else: validcrc = False
-        #Return in a nicer dictionary format, so we don't have to reference by number indicies.
-        #Note that 0,1,2 indicies inserted twice for backwards compatibility.
-        result = {0:frame, 1:validcrc, 2:rssi, 'bytes':frame, 'validcrc':validcrc, 'rssi':rssi, 'location':None}
-        result['dbm'] = rssi - 45 #TODO tune specifically to the Apimote platform (does ext antenna need to different?)
-        result['datetime'] = datetime.utcnow()
-        return result
+        while len(packet) > 0:
+            frame_length = ord(packet[0])
+            if len(packet) < frame_length+1:
+                print "Warning: Packet truncated"
+                break
+
+            frame = packet[1:frame_length+1]
+            if len(frame) < 3:    # MAGIC
+                print "Warning: Short frame detected"
+                break
+
+            if frame[-2:] == makeFCS(frame[:-2]): validcrc = True
+            else: validcrc = False
+
+            #Return in a nicer dictionary format, so we don't have to reference by number indicies.
+            #Note that 0,1,2 indicies inserted twice for backwards compatibility.
+            result = {0:frame, 1:validcrc, 2:rssi, 'bytes':frame, 'validcrc':validcrc, 'rssi':rssi, 'location':None}
+            result['dbm'] = rssi - 45 #TODO tune specifically to the Apimote platform (does ext antenna need to different?)
+            result['datetime'] = datetime.utcnow()
+
+            self._backlog += [result]
+
+            packet = packet[frame_length+1:]
+
+        return self._backlog.pop(0)
  
     def ping(self, da, panid, sa, channel=None):
         '''
